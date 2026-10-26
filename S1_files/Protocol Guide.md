@@ -10,7 +10,7 @@
 
 - Plot all points obtained with DFT (PBE0) in one plot (Distance vs. Energy). This includes the 30 points of your data set, the optimized bond length and the surface scan. Subtract the lowest energy value (the one with the optimized bond length) from other values and convert $\Delta E$ to kJ/mol.
 
-![Your First Single Point Calculation using Orca#Protocol Optimization of electronic structure](Your First Single Point Calculation using Orca#Protocol Optimization of electronic structure)
+![[Your First Single Point Calculation using Orca#Protocol (Optimization of Electronic Structure)]]
 
 ![[AvogadroGuide#Protocol (Molecular Orbitals)]]
 
