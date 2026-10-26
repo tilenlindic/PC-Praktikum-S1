@@ -195,9 +195,8 @@ def extract_embedded_section(markdown, heading):
         markdown
     ))
 
-    normalize = lambda value: re.sub(
-        r'[\W_]+', '', value.casefold()
-    )
+    def normalize(value):
+        return re.sub(r'[\W_]+', '', value.casefold())
 
     for i, found in enumerate(headings):
         if normalize(found.group(2)) == normalize(heading):
@@ -242,22 +241,61 @@ def render_embeds(markdown, current, config, stack):
                     content = extract_embedded_section(content, section)
 
                 if content is not None:
+
+                    # Make the embedded heading clickable.
+                    # Clicking it opens the original section.
+
+                    if has_section:
+                        first_line, newline, remainder = content.partition("\n")
+
+                        heading_match = re.match(
+                            r'^(#{1,6})\s+(.+?)\s*$',
+                            first_line
+                        )
+
+                        if heading_match:
+                            heading_text = heading_match.group(2)
+
+                            url = (
+                                published_url(source, config)
+                                + "#"
+                                + slug_heading(heading_text)
+                            )
+
+                            content = (
+                                f'{heading_match.group(1)} '
+                                f'[{heading_text}]({url})'
+                                + newline
+                                + remainder
+                            )
+
+                    # Insert the actual content of the embedded section.
+
                     output.append(
                         '\n\n'
                         + render_embeds(
-                            content, source, config, stack | {source}
+                            content,
+                            source,
+                            config,
+                            stack | {source}
                         ).strip()
                         + '\n\n'
                     )
+
                 else:
                     print(
                         f'WARNING: Embedded section not found '
                         f'in {source}: {section}'
                     )
-                    UNRESOLVED.add((current.as_posix(), reference))
+
+                    UNRESOLVED.add(
+                        (current.as_posix(), reference)
+                    )
+
                     output.append(
                         convert_text(match.group(0), current, config)
                     )
+
             else:
                 if (
                     source is not None
@@ -274,26 +312,40 @@ def render_embeds(markdown, current, config, stack):
 
             last = match.end()
 
-        output.append(convert_text(piece[last:], current, config))
+        output.append(
+            convert_text(piece[last:], current, config)
+        )
+
         return ''.join(output)
 
     pieces, last = [], 0
+
+    # Preserve fenced code blocks without modifying them.
 
     for fence in FENCE.finditer(markdown):
         pieces.append(
             render_piece(markdown[last:fence.start()])
         )
+
         pieces.append(fence.group(0))
         last = fence.end()
 
-    pieces.append(render_piece(markdown[last:]))
+    pieces.append(
+        render_piece(markdown[last:])
+    )
 
     return ''.join(pieces)
 
 
 def on_page_markdown(markdown, page, config, files):
     current = Path(page.file.src_path)
-    return render_embeds(markdown, current, config, {current})
+
+    return render_embeds(
+        markdown,
+        current,
+        config,
+        {current}
+    )
 
 
 class _Links(HTMLParser):
